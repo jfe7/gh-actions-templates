@@ -31,12 +31,12 @@ The [examples](examples) folder holds an example of each Workflow & Action.
 
 # 🪝 Commit Message Convention
 
-This repository uses the Angular commit convention.
+This repository uses the [Angular commit convention](https://www.conventionalcommits.org/).
 
-Enable the tracked Git hook once after cloning:
+Enable the tracked Git hook once after cloning, this will ensure all commits must match the angular convention:
 
 ```powershell
-.\scripts\Install-GitHooks.ps1
+.\.githooks\Install-GitHooks.ps1
 ```
 
 Commit messages must use one of these formats:
