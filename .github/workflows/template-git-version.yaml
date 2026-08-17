@@ -5,6 +5,16 @@ on:
         default: false
         required: false
         type: boolean
+      dry_run:
+        description: 'Calculate the next release without publishing it.'
+        default: false
+        required: false
+        type: boolean
+      dry_run_branch:
+        description: 'Branch to analyze in dry-run mode. Defaults to the pull request head or current ref.'
+        default: ''
+        required: false
+        type: string
     secrets:
       gh_token:
         required: true
@@ -19,7 +29,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 'Run semantic-release Tool'
+      - name: 'Run semantic-release'
+        if: ${{ !inputs.dry_run }}
         run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
+
+      - name: 'Preview semantic-release'
+        if: ${{ inputs.dry_run }}
+        run: npx semantic-release --dry-run --no-ci --branches "$RELEASE_BRANCH"
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+          RELEASE_BRANCH: ${{ inputs.dry_run_branch || github.head_ref || github.ref_name }}

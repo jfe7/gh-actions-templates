@@ -186,3 +186,12 @@ jobs:
           Write-Output "Creating new comment."
           $createUri     = "https://api.github.com/repos/$repositoryOwner/$repositoryName/issues/$issueNumber/comments"
           $createComment = Invoke-RestMethod -Method Post -Uri $createUri -Headers $apiHeaders -Body (@{ body = $bodyContent } | ConvertTo-Json -Depth 2)
+
+  git_version:
+    name: 'Git Version'
+    uses: ./.github/workflows/template-git-version.yaml
+    with:
+      dry_run: true
+      dry_run_branch: ${{ github.head_ref || github.ref_name }}
+    secrets:
+      gh_token: ${{ secrets.GITHUB_TOKEN }}
