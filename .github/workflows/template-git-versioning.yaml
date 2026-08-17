@@ -1,0 +1,64 @@
+on:
+  workflow_call:
+    inputs:
+      custom_release_config_file:
+        default: false
+        required: false
+        type: boolean
+      dry_run:
+        description: 'Calculate the next release without publishing it.'
+        default: false
+        required: false
+        type: boolean
+      dry_run_branch:
+        description: 'Branch to analyze in dry-run mode. Defaults to the pull request head or current ref.'
+        default: ''
+        required: false
+        type: string
+    secrets:
+      gh_token:
+        required: true
+
+jobs:
+  semantic_release:
+    name: 'Semantic Release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.dry_run && github.event.pull_request.head.sha || github.sha }}
+
+      - name: 'Prepare Preview Branch'
+        if: ${{ inputs.dry_run }}
+        run: git checkout -B "$RELEASE_BRANCH"
+        env:
+          RELEASE_BRANCH: ${{ inputs.dry_run_branch || github.head_ref || github.ref_name }}
+
+      - name: 'Semantic Release'
+        if: ${{ !inputs.dry_run }}
+        run: >
+          npx semantic-release
+          --plugins
+          @semantic-release/commit-analyzer
+          @semantic-release/release-notes-generator
+          @semantic-release/github
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+
+      - name: 'Semantic Release [Preview]'
+        if: ${{ inputs.dry_run }}
+        run: |
+          unset GITHUB_ACTIONS GITHUB_REF GITHUB_REF_NAME GITHUB_HEAD_REF GITHUB_BASE_REF
+          npx semantic-release \
+            --dry-run \
+            --no-ci \
+            --branches "$RELEASE_BRANCH" \
+            --plugins \
+            @semantic-release/commit-analyzer \
+            @semantic-release/release-notes-generator \
+            @semantic-release/github
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+          RELEASE_BRANCH: ${{ inputs.dry_run_branch || github.head_ref || github.ref_name }}

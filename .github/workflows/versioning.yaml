@@ -1,0 +1,19 @@
+name: 'Git Versioning'
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  git_versioning:
+    name: 'Git Versioning'
+    uses: ./.github/workflows/template-git-versioning.yaml
+    with:
+      dry_run: false
+    secrets:
+      gh_token: ${{ secrets.GITHUB_TOKEN }}
