@@ -1,4 +1,4 @@
-# 🚀 GitHub Workflow Templates
+# 🚀 GitHub Actions Templates
 
 This repository contains a collection of reusable GitHub Actions templates for common CI/CD tasks across various technologies.
 
@@ -16,8 +16,8 @@ All workflows are located in [.github/workflows](.github/workflows/) and follow 
 #### Examples:
 
 ```
-- workflow-linter.yml
-- workflow-terraform-plan-apply-factory-deploy.yml
+- template-linter.yml
+- template-terraform-plan-apply-factory-deploy.yml
 ```
 
 The workflow files which are not prefixed with `template-` are workflows for this repository.
