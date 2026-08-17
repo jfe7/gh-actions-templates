@@ -18,7 +18,7 @@ permissions:
 jobs:
   git-version:
     name: 'Git Version'
-    uses: 'jfe7/gh-actions-templates/.github/workflows/template-git-version.yaml@main'
+    uses: 'jfe7/gh-actions-templates/.github/workflows/template-git-versioning.yaml@main'
     with:
       dry_run: ${{ github.event_name == 'pull_request' }}
     secrets:
