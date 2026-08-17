@@ -1,0 +1,188 @@
+name: Pull Request Check
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  pull_request_check:
+    name: 'Pull Request Check'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check File Case in .github/**
+        run: |
+          errors=0
+
+          while read -r file; do
+            base="$(basename "$file")"
+
+            if [[ "$base" == *PULL_REQUEST_TEMPLATE* ]]; then
+              continue
+            fi
+
+            lowercase="$(echo "$base" | tr '[:upper:]' '[:lower:]')"
+            if [ "$base" != "$lowercase" ]; then
+              echo "🚫 File not lowercase: $file"
+              errors=$((errors + 1))
+            fi
+          done < <(find . -depth -type f)
+
+          if [ "$errors" -ne 0 ]; then
+            echo "❌ Found $errors file(s) with uppercase letters."
+            exit 1
+          else
+            echo "✅ All filenames are lowercase."
+            exit 0
+          fi
+        working-directory: .github
+
+      - name: Check File Patterns in .github/**
+        run: |
+          errors=0
+
+          while read -r file; do
+            base="$(basename "$file")"
+
+            # Check for allowed filename patterns
+            if [[ "$base" == action.yml || "$base" == _* || "$base" == .* || "$base" == template-* || "$base" == workflow-* || "$base" == *.md* ]]; then
+              echo "✅ Valid filename pattern: $file"
+              continue
+            else
+              echo "🚫 Invalid filename pattern: $file"
+              errors=$((errors + 1))
+            fi
+          done < <(find . -depth -type f)
+
+          if [ "$errors" -gt 0 ]; then
+            echo "❌ Found $errors file(s) that don't match allowed patterns."
+            exit 1
+          else
+            echo "✅ All filenames match allowed patterns."
+            exit 0
+          fi
+        working-directory: .github
+
+      - name: Check Examples
+        run: |
+          shopt -s nullglob # Prevent literal glob expansion if no matches
+          errors=0
+
+          for file in "$WORKFLOWS_DIR"/template-*.yml "$WORKFLOWS_DIR"/workflow-*.yml; do
+            # Get Base Name.
+            echo "⚙️ Processing file : $file"
+            base_name=$(basename "$file" .yml)
+
+            # Construct Expected Example Path.
+            if [[ "$base_name" == workflow-* ]]; then
+              md_file="$WORKFLOWS_EXAMPLES_DIR/${base_name}.md"
+            elif [[ "$base_name" == template-* ]]; then
+              md_file="$TEMPLATES_EXAMPLES_DIR/${base_name}.md"
+            fi
+
+            # Check If Example MD Exists.
+            if [ ! -f "$md_file" ]; then
+              echo "🚫 Example file not found : $md_file"
+              errors=$((errors + 1))
+            else
+              echo "✅ Example file found : $md_file"
+            fi
+          done
+
+          for folder in "$ACTIONS_DIR"/*/; do
+            # Get Base Name.
+            echo "📁 Processing folder : $folder"
+            base_name=$(basename "$folder")
+
+            # Construct Expected Example Path.
+            md_file="$ACTIONS_EXAMPLES_DIR/${base_name}.md"
+
+            # Check If Example MD Exists.
+            if [ ! -f "$md_file" ]; then
+              echo "🚫 Example file not found : $md_file"
+              errors=$((errors + 1))
+            else
+              echo "✅ Example file found : $md_file"
+            fi
+          done
+
+          if [ "$errors" -gt 0 ]; then
+            echo "❌ Found $errors templates that require example files."
+            exit 1
+          else
+            echo "✅ All templates have example files!"
+            exit 0
+          fi
+        env:
+          WORKFLOWS_DIR: .github/workflows
+          WORKFLOWS_EXAMPLES_DIR: examples/workflows
+          TEMPLATES_EXAMPLES_DIR: examples/templates
+          ACTIONS_DIR: .github/actions
+          ACTIONS_EXAMPLES_DIR: examples/actions
+
+      - name: 'Run Super-Linter'
+        uses: super-linter/super-linter@v8.1.0
+        env:
+          CREATE_LOG_FILE: true
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          FILTER_REGEX_INCLUDE: '(\.github/workflows/.*|\.github/actions/.*|.*\.ps1|.*\.sh|.*\.bash)'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LINTER_RULES_PATH: .github/linters/
+          VALIDATE_CHECKOV: false
+          VALIDATE_GITHUB_ACTIONS_ZIZMOR: false
+          VALIDATE_JSCPD: false
+          VALIDATE_YAML_PRETTIER: false
+          YAML_CONFIG_FILE: .yaml-lint.yml
+
+      - name: 'Copy Super-Linter Job Summary'
+        run: |
+          DIR="/home/runner/work/_temp/_runner_file_commands"
+
+          find "$DIR" -type f -name 'step_summary_*scrubbed' | while read -r file; do
+            if grep -q "Super-linter" "$file"; then
+              echo "Copying Super-Linter job summary."
+              cp "$file" "$GITHUB_WORKSPACE/super-linter-summary.md"
+            fi
+          done
+        if: always()
+
+      - name: 'Add Pull Request Comment'
+        if: always() && github.event_name == 'pull_request'
+        shell: pwsh
+        run: |
+          $ghToken         = "${{ secrets.GITHUB_TOKEN }}"
+          $repositoryName  = ("${{ github.repository }}" -Split '/')[1]
+          $repositoryOwner = ("${{ github.repository }}" -Split '/')[0]
+          $issueNumber     = "${{ github.event.pull_request.number }}"
+          $commentSearch   = "# Super-linter summary"
+          $bodyContent     = Get-Content "${{ github.workspace }}/super-linter-summary.md" -Raw
+
+          $apiHeaders = @{
+            Authorization = "Bearer $ghToken"
+            Accept = "application/vnd.github.v3+json"
+          }
+
+          # Get existing comments and search for commentSearch value.
+          $commentsUri      = "https://api.github.com/repos/$repositoryOwner/$repositoryName/issues/$issueNumber/comments"
+          $existingComments = Invoke-RestMethod -Uri $commentsUri -Headers $apiHeaders
+          $existingComment  = $existingComments | Where-Object { $_.body -like "*$commentSearch*" }
+
+          # Delete existing comment if found, then create new comment.
+          if ($existingComment) {
+              Write-Host "Deleting existing comment."
+              $deleteUri     = "https://api.github.com/repos/$repositoryOwner/$repositoryName/issues/comments/$($existingComment.id)"
+              $deleteComment = Invoke-RestMethod -Method Delete -Uri $deleteUri -Headers $apiHeaders
+          }
+
+          Write-Host "Creating new comment."
+          $createUri     = "https://api.github.com/repos/$repositoryOwner/$repositoryName/issues/$issueNumber/comments"
+          $createComment = Invoke-RestMethod -Method Post -Uri $createUri -Headers $apiHeaders -Body (@{ body = $bodyContent } | ConvertTo-Json -Depth 2)
