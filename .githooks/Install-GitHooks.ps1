@@ -36,7 +36,7 @@ try {
         throw 'Failed to configure the Git hooks path.'
     }
 
-    Write-Host 'Git hooks installed. Commit messages will use the Angular convention.' -ForegroundColor Green
+    Write-Output 'Git hooks installed. Commit messages will use the Angular convention.'
 }
 finally {
     Pop-Location

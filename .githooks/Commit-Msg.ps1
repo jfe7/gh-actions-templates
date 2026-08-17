@@ -62,15 +62,15 @@ if ($header.Length -gt 100) {
 }
 
 if ($header -cnotmatch $headerPattern) {
-    Write-Host 'Commit message must follow the Angular convention:' -ForegroundColor Red
-    Write-Host '  type(optional-scope): lowercase description' -ForegroundColor Yellow
-    Write-Host '  type(optional-scope)!: lowercase breaking-change description' -ForegroundColor Yellow
-    Write-Host ''
-    Write-Host "Allowed types: $($allowedTypes -join ', ')"
-    Write-Host 'Examples:'
-    Write-Host '  feat(workflows): add reusable validation'
-    Write-Host '  fix: handle missing input'
-    Write-Host '  refactor(api)!: remove deprecated parameter'
+    Write-Output 'Commit message must follow the Angular convention:'
+    Write-Output '  type(optional-scope): lowercase description'
+    Write-Output '  type(optional-scope)!: lowercase breaking-change description'
+    Write-Output ''
+    Write-Output "Allowed types: $($allowedTypes -join ', ')"
+    Write-Output 'Examples:'
+    Write-Output '  feat(workflows): add reusable validation'
+    Write-Output '  fix: handle missing input'
+    Write-Output '  refactor(api)!: remove deprecated parameter'
     exit 1
 }
 
