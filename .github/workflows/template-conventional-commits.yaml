@@ -1,0 +1,110 @@
+on:
+  workflow_call:
+    inputs:
+      runs_on:
+        description: 'Runner used for commit validation.'
+        default: ubuntu-latest
+        required: false
+        type: string
+      validate_pr_title:
+        description: 'Validate the pull request title.'
+        default: true
+        required: false
+        type: boolean
+      validate_commits:
+        description: 'Validate every commit introduced by the pull request.'
+        default: true
+        required: false
+        type: boolean
+
+jobs:
+  conventional_commits:
+    name: 'Validate Commits'
+    runs-on: ${{ inputs.runs_on }}
+    steps:
+      - name: 'Checkout'
+        if: ${{ inputs.validate_commits }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 'Validate Commit Convention'
+        shell: pwsh
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          VALIDATE_COMMITS: ${{ inputs.validate_commits }}
+          VALIDATE_PR_TITLE: ${{ inputs.validate_pr_title }}
+        run: |
+          $allowedTypes = @(
+              'build'
+              'chore'
+              'ci'
+              'docs'
+              'feat'
+              'fix'
+              'perf'
+              'refactor'
+              'revert'
+              'style'
+              'test'
+          )
+          $allowedTypesPattern = ($allowedTypes | ForEach-Object { [regex]::Escape($_) }) -join '|'
+          $headerPattern = "^($allowedTypesPattern)(\([a-z0-9][a-z0-9._/-]*\))?!?: [a-z0-9](.*[^.])?$"
+          $invalidHeaders = [System.Collections.Generic.List[string]]::new()
+
+          function Test-CommitHeader {
+              param(
+                  [Parameter(Mandatory = $true)]
+                  [string]$Header
+              )
+
+              if ([string]::IsNullOrWhiteSpace($Header) -or $Header.Length -gt 100) {
+                  return $false
+              }
+
+              if ($Header -match '^(Merge |Revert "|fixup! |squash! )') {
+                  return $true
+              }
+
+              return $Header -cmatch $headerPattern
+          }
+
+          if ($env:VALIDATE_PR_TITLE -eq 'true') {
+              if ([string]::IsNullOrWhiteSpace($env:PR_TITLE)) {
+                  throw 'Pull request title validation requires a pull_request event.'
+              }
+
+              if (-not (Test-CommitHeader -Header $env:PR_TITLE)) {
+                  $invalidHeaders.Add("Pull request title: $($env:PR_TITLE)")
+              }
+          }
+
+          if ($env:VALIDATE_COMMITS -eq 'true') {
+              if ([string]::IsNullOrWhiteSpace($env:BASE_SHA) -or [string]::IsNullOrWhiteSpace($env:HEAD_SHA)) {
+                  throw 'Commit validation requires a pull_request event.'
+              }
+
+              $commitHeaders = git log --format=%s "$($env:BASE_SHA)..$($env:HEAD_SHA)"
+              if ($LASTEXITCODE -ne 0) {
+                  throw 'Unable to read pull request commits.'
+              }
+
+              foreach ($commitHeader in $commitHeaders) {
+                  if (-not (Test-CommitHeader -Header $commitHeader)) {
+                      $invalidHeaders.Add("Commit: $commitHeader")
+                  }
+              }
+          }
+
+          if ($invalidHeaders.Count -gt 0) {
+              Write-Output 'The following values do not follow the Angular commit convention:'
+              $invalidHeaders | ForEach-Object { Write-Output "  - $_" }
+              Write-Output ''
+              Write-Output 'Expected: type(optional-scope): lowercase description'
+              Write-Output "Allowed types: $($allowedTypes -join ', ')"
+              exit 1
+          }
+
+          Write-Output 'All selected commit convention checks passed.'

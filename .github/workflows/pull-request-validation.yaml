@@ -135,6 +135,10 @@ jobs:
           ACTIONS_DIR: .github/actions
           ACTIONS_EXAMPLES_DIR: examples/actions
 
+  conventional_commits:
+    name: 'Validate Commits'
+    uses: ./.github/workflows/template-conventional-commits.yaml
+
   git_versioning:
     name: 'Preview Git Versioning'
     uses: ./.github/workflows/template-git-versioning.yaml
