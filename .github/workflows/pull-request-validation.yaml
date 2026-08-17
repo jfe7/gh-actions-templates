@@ -10,8 +10,14 @@ permissions:
   statuses: write
 
 jobs:
-  pull_request_validation:
-    name: 'Pull Request Validation'
+  linter:
+    name: 'Linter'
+    uses: ./.github/workflows/template-linter.yaml
+    secrets:
+      gh_token: ${{ secrets.GITHUB_TOKEN }}
+
+  template_validation:
+    name: 'Template Validation'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -129,69 +135,10 @@ jobs:
           ACTIONS_DIR: .github/actions
           ACTIONS_EXAMPLES_DIR: examples/actions
 
-      - name: 'Run Super-Linter'
-        uses: super-linter/super-linter@v8.1.0
-        env:
-          CREATE_LOG_FILE: true
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          FILTER_REGEX_INCLUDE: '(\.github/workflows/.*|\.github/actions/.*|.*\.ps1|.*\.sh|.*\.bash)'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LINTER_RULES_PATH: .github/linters/
-          VALIDATE_CHECKOV: false
-          VALIDATE_GITHUB_ACTIONS_ZIZMOR: false
-          VALIDATE_JSCPD: false
-          VALIDATE_YAML_PRETTIER: false
-          YAML_CONFIG_FILE: .yaml-lint.yml
-
-      - name: 'Copy Super-Linter Job Summary'
-        run: |
-          DIR="/home/runner/work/_temp/_runner_file_commands"
-
-          find "$DIR" -type f -name 'step_summary_*scrubbed' | while read -r file; do
-            if grep -q "Super-linter" "$file"; then
-              echo "Copying Super-Linter job summary."
-              cp "$file" "$GITHUB_WORKSPACE/super-linter-summary.md"
-            fi
-          done
-        if: always()
-
-      - name: 'Add Pull Request Comment'
-        if: always() && github.event_name == 'pull_request'
-        shell: pwsh
-        run: |
-          $ghToken         = "${{ secrets.GITHUB_TOKEN }}"
-          $repositoryName  = ("${{ github.repository }}" -Split '/')[1]
-          $repositoryOwner = ("${{ github.repository }}" -Split '/')[0]
-          $issueNumber     = "${{ github.event.pull_request.number }}"
-          $commentSearch   = "# Super-linter summary"
-          $bodyContent     = Get-Content "${{ github.workspace }}/super-linter-summary.md" -Raw
-
-          $apiHeaders = @{
-            Authorization = "Bearer $ghToken"
-            Accept = "application/vnd.github.v3+json"
-          }
-
-          # Get existing comments and search for commentSearch value.
-          $commentsUri      = "https://api.github.com/repos/$repositoryOwner/$repositoryName/issues/$issueNumber/comments"
-          $existingComments = Invoke-RestMethod -Uri $commentsUri -Headers $apiHeaders
-          $existingComment  = $existingComments | Where-Object { $_.body -like "*$commentSearch*" }
-
-          # Delete existing comment if found, then create new comment.
-          if ($existingComment) {
-              Write-Output "Deleting existing comment."
-              $deleteUri     = "https://api.github.com/repos/$repositoryOwner/$repositoryName/issues/comments/$($existingComment.id)"
-              $deleteComment = Invoke-RestMethod -Method Delete -Uri $deleteUri -Headers $apiHeaders
-          }
-
-          Write-Output "Creating new comment."
-          $createUri     = "https://api.github.com/repos/$repositoryOwner/$repositoryName/issues/$issueNumber/comments"
-          $createComment = Invoke-RestMethod -Method Post -Uri $createUri -Headers $apiHeaders -Body (@{ body = $bodyContent } | ConvertTo-Json -Depth 2)
-
-  git_version:
-    name: 'Git Version'
-    uses: ./.github/workflows/template-git-version.yaml
+  git_versioning:
+    name: 'Git Versioning'
+    uses: ./.github/workflows/template-git-versioning.yaml
     with:
       dry_run: true
-      dry_run_branch: ${{ github.head_ref || github.ref_name }}
     secrets:
       gh_token: ${{ secrets.GITHUB_TOKEN }}

@@ -20,7 +20,7 @@ on:
         required: true
 
 jobs:
-  git-versioning:
+  git_versioning:
     name: 'Git Versioning'
     runs-on: ubuntu-latest
     steps:
