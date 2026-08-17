@@ -1,0 +1,25 @@
+on:
+  workflow_call:
+    inputs:
+      custom_release_config_file:
+        default: false
+        required: false
+        type: boolean
+    secrets:
+      gh_token:
+        required: true
+
+jobs:
+  git-versioning:
+    name: 'Git Versioning'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 'Run semantic-release Tool'
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
