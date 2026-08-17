@@ -13,9 +13,9 @@ permissions:
   contents: write
 
 jobs:
-  git-versioning:
-    name: 'Git Versioning'
-    uses: 'jfe7/gh-actions-templates/.github/workflows/template-git-versioning.yml@main'
+  git-version:
+    name: 'Git Version'
+    uses: 'jfe7/gh-actions-templates/.github/workflows/template-git-version.yml@main'
     secrets:
       gh_token: ${{ secrets.GITHUB_TOKEN }}
 ```

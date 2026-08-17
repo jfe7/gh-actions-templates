@@ -1,4 +1,4 @@
-# 🚀 GitHub Workflow Teampltes
+# 🚀 GitHub Workflow Templates
 
 This repository contains a collection of reusable GitHub Actions templates for common CI/CD tasks across various technologies.
 
@@ -21,7 +21,7 @@ All workflows are located in [.github/workflows](.github/workflows/) and follow 
 
 The workflow files which are not prefixed with ```template-``` are workflows for this repository.
 
-For example ```validate.yml``` which validates the code quality in this repository.
+For example ```pull-request-validation.yml``` which runs on a pull request and validates the code quality in this repository.
 
 # 🛠️ How to Use These Workflows & Actions
 
