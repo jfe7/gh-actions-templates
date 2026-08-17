@@ -44,7 +44,9 @@ jobs:
 
       - name: 'Semantic Release [Preview]'
         if: ${{ inputs.dry_run }}
-        run: npx semantic-release --dry-run --no-ci --branches "$RELEASE_BRANCH"
+        run: |
+          unset GITHUB_ACTIONS GITHUB_REF GITHUB_REF_NAME GITHUB_HEAD_REF GITHUB_BASE_REF
+          npx semantic-release --dry-run --no-ci --branches "$RELEASE_BRANCH"
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
           RELEASE_BRANCH: ${{ inputs.dry_run_branch || github.head_ref || github.ref_name }}
