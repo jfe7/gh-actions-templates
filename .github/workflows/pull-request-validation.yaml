@@ -1,4 +1,4 @@
-name: Pull Request Check
+name: Pull Request Validation
 
 on:
   workflow_dispatch:
@@ -10,8 +10,8 @@ permissions:
   statuses: write
 
 jobs:
-  pull_request_check:
-    name: 'Pull Request Check'
+  pull_request_validation:
+    name: 'Pull Request Validation'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -178,11 +178,11 @@ jobs:
 
           # Delete existing comment if found, then create new comment.
           if ($existingComment) {
-              Write-Host "Deleting existing comment."
+              Write-Output "Deleting existing comment."
               $deleteUri     = "https://api.github.com/repos/$repositoryOwner/$repositoryName/issues/comments/$($existingComment.id)"
               $deleteComment = Invoke-RestMethod -Method Delete -Uri $deleteUri -Headers $apiHeaders
           }
 
-          Write-Host "Creating new comment."
+          Write-Output "Creating new comment."
           $createUri     = "https://api.github.com/repos/$repositoryOwner/$repositoryName/issues/$issueNumber/comments"
           $createComment = Invoke-RestMethod -Method Post -Uri $createUri -Headers $apiHeaders -Body (@{ body = $bodyContent } | ConvertTo-Json -Depth 2)
