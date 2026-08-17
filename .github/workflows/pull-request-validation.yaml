@@ -136,7 +136,6 @@ jobs:
           ACTIONS_EXAMPLES_DIR: examples/actions
 
   git_versioning:
-    name: 'Git Versioning'
     uses: ./.github/workflows/template-git-versioning.yaml
     with:
       dry_run: true
