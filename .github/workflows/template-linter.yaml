@@ -30,6 +30,7 @@ jobs:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GITHUB_TOKEN: ${{ secrets.gh_token }}
           LINTER_RULES_PATH: .github/linters
+          PRETTIER_COMMAND_OPTIONS: '--config .github/linters/.prettierrc.json'
           VALIDATE_GITHUB_ACTIONS_ZIZMOR: false
           VALIDATE_JSCPD: false
           VALIDATE_TERRAFORM_TERRASCAN: false
