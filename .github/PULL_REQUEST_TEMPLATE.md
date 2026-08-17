@@ -6,9 +6,15 @@
 
 ## ✅ Checklist
 
-- [ ] My commit messages are clear and meaningful.
-- [ ] I have added or updated tests where needed.
-- [ ] I have updated the README and other relevant documentation where needed.
+- [ ] ✅ The code builds successfully without errors or warnings.
+
+<!-- textlint-disable -->
+
+- [ ] 📖 The README has been updated with the latest document changes.
+
+<!-- textlint-enable -->
+
+- [ ] 📋 All project guidelines and conventions have been followed.
 
 ## ⚠️ Breaking Changes
 

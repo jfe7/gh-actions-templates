@@ -5,23 +5,24 @@ This repository contains a collection of reusable GitHub Actions templates for c
 Examples on how to use each template can be found [here](examples/).
 
 # 📂 Workflow Naming Convention
+
 All workflows are located in [.github/workflows](.github/workflows/) and follow this naming pattern:
 
-| Pattern           | Purpose                                      |
-|-------------------|----------------------------------------------|
-| &lt;purpose&gt;.yaml                               | GitHub Workflow for this repository only.      |
-| template-&lt;tech-or-tool&gt;-&lt;purpose&gt;.yaml  | Re-usable templates to be called via workflows.|
-
+| Pattern                                            | Purpose                                         |
+| -------------------------------------------------- | ----------------------------------------------- |
+| &lt;purpose&gt;.yaml                               | GitHub Workflow for this repository only.       |
+| template-&lt;tech-or-tool&gt;-&lt;purpose&gt;.yaml | Re-usable templates to be called via workflows. |
 
 #### Examples:
+
 ```
 - workflow-linter.yml
 - workflow-terraform-plan-apply-factory-deploy.yml
 ```
 
-The workflow files which are not prefixed with ```template-``` are workflows for this repository.
+The workflow files which are not prefixed with `template-` are workflows for this repository.
 
-For example ```pull-request-validation.yml``` which runs on a pull request and validates the code quality in this repository.
+For example `pull-request-validation.yml` which runs on a pull request and validates the code quality in this repository.
 
 # 🛠️ How to Use These Workflows & Actions
 
