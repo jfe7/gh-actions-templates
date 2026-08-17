@@ -54,7 +54,7 @@ jobs:
             base="$(basename "$file")"
 
             # Check for allowed filename patterns
-            if [[ "$base" == action.yml || "$base" == _* || "$base" == .* || "$base" == template-* || "$base" == workflow-* || "$base" == *.md* ]]; then
+            if [[ "$base" == action.yml || "$base" == *.yaml || "$base" == .* || "$base" == template-* || "$base" == workflow-* || "$base" == *.md ]]; then
               echo "✅ Valid filename pattern: $file"
               continue
             else
@@ -77,10 +77,10 @@ jobs:
           shopt -s nullglob # Prevent literal glob expansion if no matches
           errors=0
 
-          for file in "$WORKFLOWS_DIR"/template-*.yml "$WORKFLOWS_DIR"/workflow-*.yml; do
+          for file in "$WORKFLOWS_DIR"/template-*.yaml "$WORKFLOWS_DIR"/workflow-*.yaml; do
             # Get Base Name.
             echo "⚙️ Processing file : $file"
-            base_name=$(basename "$file" .yml)
+            base_name=$(basename "$file" .yaml)
 
             # Construct Expected Example Path.
             if [[ "$base_name" == workflow-* ]]; then
