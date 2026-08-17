@@ -136,7 +136,7 @@ jobs:
           ACTIONS_EXAMPLES_DIR: examples/actions
 
   conventional_commits:
-    name: 'Conventional Commits'
+    name: 'Validate Commits'
     uses: ./.github/workflows/template-conventional-commits.yaml
 
   git_versioning:

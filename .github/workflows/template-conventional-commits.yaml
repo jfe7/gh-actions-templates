@@ -19,7 +19,7 @@ on:
 
 jobs:
   conventional_commits:
-    name: 'Validate Conventional Commits'
+    name: 'Validate Commits'
     runs-on: ${{ inputs.runs_on }}
     steps:
       - name: 'Checkout'
