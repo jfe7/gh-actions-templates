@@ -32,33 +32,47 @@ jobs:
 
       - name: 'Prepare Preview Branch'
         if: ${{ inputs.dry_run }}
-        run: git checkout -B "$RELEASE_BRANCH"
+        shell: pwsh
+        run: |
+          git checkout -B $env:RELEASE_BRANCH
         env:
           RELEASE_BRANCH: ${{ inputs.dry_run_branch || github.head_ref || github.ref_name }}
 
       - name: 'Semantic Release'
         if: ${{ !inputs.dry_run }}
-        run: >
-          npx semantic-release
-          --plugins
-          @semantic-release/commit-analyzer
-          @semantic-release/release-notes-generator
-          @semantic-release/github
+        shell: pwsh
+        run: |
+          $semanticReleaseArguments = @(
+              'semantic-release'
+              '--plugins'
+              '@semantic-release/commit-analyzer'
+              '@semantic-release/release-notes-generator'
+              '@semantic-release/github'
+          )
+
+          npx @semanticReleaseArguments
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
 
       - name: 'Semantic Release [Preview]'
         if: ${{ inputs.dry_run }}
+        shell: pwsh
         run: |
-          unset GITHUB_ACTIONS GITHUB_REF GITHUB_REF_NAME GITHUB_HEAD_REF GITHUB_BASE_REF
-          npx semantic-release \
-            --dry-run \
-            --no-ci \
-            --branches "$RELEASE_BRANCH" \
-            --plugins \
-            @semantic-release/commit-analyzer \
-            @semantic-release/release-notes-generator \
-            @semantic-release/github
+          Remove-Item Env:GITHUB_ACTIONS, Env:GITHUB_REF, Env:GITHUB_REF_NAME, Env:GITHUB_HEAD_REF, Env:GITHUB_BASE_REF -ErrorAction SilentlyContinue
+
+          $semanticReleaseArguments = @(
+              'semantic-release'
+              '--dry-run'
+              '--no-ci'
+              '--branches'
+              $env:RELEASE_BRANCH
+              '--plugins'
+              '@semantic-release/commit-analyzer'
+              '@semantic-release/release-notes-generator'
+              '@semantic-release/github'
+          )
+
+          npx @semanticReleaseArguments
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
           RELEASE_BRANCH: ${{ inputs.dry_run_branch || github.head_ref || github.ref_name }}

@@ -26,108 +26,109 @@ jobs:
           fetch-depth: 0
 
       - name: Check File Case in .github/**
+        shell: pwsh
         run: |
-          errors=0
+          $errors = 0
 
-          while read -r file; do
-            base="$(basename "$file")"
+          Get-ChildItem -Path . -Recurse -File -Force | ForEach-Object {
+              $fileName = $_.Name
 
-            if [[ "$base" == *PULL_REQUEST_TEMPLATE* ]]; then
-              continue
-            fi
+              if ($fileName -notlike '*PULL_REQUEST_TEMPLATE*' -and $fileName -cne $fileName.ToLowerInvariant()) {
+                  Write-Output "🚫 File not lowercase: $($_.FullName)"
+                  $errors++
+              }
+          }
 
-            lowercase="$(echo "$base" | tr '[:upper:]' '[:lower:]')"
-            if [ "$base" != "$lowercase" ]; then
-              echo "🚫 File not lowercase: $file"
-              errors=$((errors + 1))
-            fi
-          done < <(find . -depth -type f)
+          if ($errors -ne 0) {
+              Write-Output "❌ Found $errors file(s) with uppercase letters."
+              exit 1
+          }
 
-          if [ "$errors" -ne 0 ]; then
-            echo "❌ Found $errors file(s) with uppercase letters."
-            exit 1
-          else
-            echo "✅ All filenames are lowercase."
-            exit 0
-          fi
+          Write-Output '✅ All filenames are lowercase.'
         working-directory: .github
 
       - name: Check File Patterns in .github/**
+        shell: pwsh
         run: |
-          errors=0
+          $errors = 0
+          $allowedPatterns = @(
+              'action.yml'
+              '*.yaml'
+              '.*'
+              'template-*'
+              'workflow-*'
+              '*.md'
+          )
 
-          while read -r file; do
-            base="$(basename "$file")"
+          Get-ChildItem -Path . -Recurse -File -Force | ForEach-Object {
+              $fileName = $_.Name
+              $isValid = $allowedPatterns.Where({ $fileName -like $_ }).Count -gt 0
 
-            # Check for allowed filename patterns
-            if [[ "$base" == action.yml || "$base" == *.yaml || "$base" == .* || "$base" == template-* || "$base" == workflow-* || "$base" == *.md ]]; then
-              echo "✅ Valid filename pattern: $file"
-              continue
-            else
-              echo "🚫 Invalid filename pattern: $file"
-              errors=$((errors + 1))
-            fi
-          done < <(find . -depth -type f)
+              if ($isValid) {
+                  Write-Output "✅ Valid filename pattern: $($_.FullName)"
+              }
+              else {
+                  Write-Output "🚫 Invalid filename pattern: $($_.FullName)"
+                  $errors++
+              }
+          }
 
-          if [ "$errors" -gt 0 ]; then
-            echo "❌ Found $errors file(s) that don't match allowed patterns."
-            exit 1
-          else
-            echo "✅ All filenames match allowed patterns."
-            exit 0
-          fi
+          if ($errors -gt 0) {
+              Write-Output "❌ Found $errors file(s) that don't match allowed patterns."
+              exit 1
+          }
+
+          Write-Output '✅ All filenames match allowed patterns.'
         working-directory: .github
 
       - name: Check Examples
+        shell: pwsh
         run: |
-          shopt -s nullglob # Prevent literal glob expansion if no matches
-          errors=0
+          $errors = 0
+          $workflowFiles = Get-ChildItem -Path $env:WORKFLOWS_DIR -File | Where-Object {
+              $_.Name -like 'template-*.yaml' -or $_.Name -like 'workflow-*.yaml'
+          }
 
-          for file in "$WORKFLOWS_DIR"/template-*.yaml "$WORKFLOWS_DIR"/workflow-*.yaml; do
-            # Get Base Name.
-            echo "⚙️ Processing file : $file"
-            base_name=$(basename "$file" .yaml)
+          foreach ($file in $workflowFiles) {
+              Write-Output "⚙️ Processing file : $($file.FullName)"
 
-            # Construct Expected Example Path.
-            if [[ "$base_name" == workflow-* ]]; then
-              md_file="$WORKFLOWS_EXAMPLES_DIR/${base_name}.md"
-            elif [[ "$base_name" == template-* ]]; then
-              md_file="$TEMPLATES_EXAMPLES_DIR/${base_name}.md"
-            fi
+              if ($file.BaseName -like 'workflow-*') {
+                  $exampleFile = Join-Path $env:WORKFLOWS_EXAMPLES_DIR "$($file.BaseName).md"
+              }
+              else {
+                  $exampleFile = Join-Path $env:TEMPLATES_EXAMPLES_DIR "$($file.BaseName).md"
+              }
 
-            # Check If Example MD Exists.
-            if [ ! -f "$md_file" ]; then
-              echo "🚫 Example file not found : $md_file"
-              errors=$((errors + 1))
-            else
-              echo "✅ Example file found : $md_file"
-            fi
-          done
+              if (Test-Path -LiteralPath $exampleFile -PathType Leaf) {
+                  Write-Output "✅ Example file found : $exampleFile"
+              }
+              else {
+                  Write-Output "🚫 Example file not found : $exampleFile"
+                  $errors++
+              }
+          }
 
-          for folder in "$ACTIONS_DIR"/*/; do
-            # Get Base Name.
-            echo "📁 Processing folder : $folder"
-            base_name=$(basename "$folder")
+          if (Test-Path -LiteralPath $env:ACTIONS_DIR -PathType Container) {
+              foreach ($folder in Get-ChildItem -Path $env:ACTIONS_DIR -Directory) {
+                  Write-Output "📁 Processing folder : $($folder.FullName)"
+                  $exampleFile = Join-Path $env:ACTIONS_EXAMPLES_DIR "$($folder.Name).md"
 
-            # Construct Expected Example Path.
-            md_file="$ACTIONS_EXAMPLES_DIR/${base_name}.md"
+                  if (Test-Path -LiteralPath $exampleFile -PathType Leaf) {
+                      Write-Output "✅ Example file found : $exampleFile"
+                  }
+                  else {
+                      Write-Output "🚫 Example file not found : $exampleFile"
+                      $errors++
+                  }
+              }
+          }
 
-            # Check If Example MD Exists.
-            if [ ! -f "$md_file" ]; then
-              echo "🚫 Example file not found : $md_file"
-              errors=$((errors + 1))
-            else
-              echo "✅ Example file found : $md_file"
-            fi
-          done
+          if ($errors -gt 0) {
+              Write-Output "❌ Found $errors templates that require example files."
+              exit 1
+          }
 
-          if [ "$errors" -gt 0 ]; then
-            echo "❌ Found $errors templates that require example files."
-            exit 1
-          else
-            echo "✅ All templates have example files!"
-            exit 0
-          fi
+          Write-Output '✅ All templates have example files!'
         env:
           WORKFLOWS_DIR: .github/workflows
           WORKFLOWS_EXAMPLES_DIR: examples/workflows

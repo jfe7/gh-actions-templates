@@ -44,22 +44,24 @@ jobs:
           VALIDATE_YAML_PRETTIER: true
 
       - name: 'Copy Super-Linter Job Summary'
+        shell: pwsh
         run: |
-          DIR="/home/runner/work/_temp/_runner_file_commands"
+          $summaryDirectory = Join-Path $env:RUNNER_TEMP '_runner_file_commands'
+          $summaryFile = Get-ChildItem -Path $summaryDirectory -Recurse -File -Filter 'step_summary_*scrubbed' |
+              Where-Object { Select-String -Path $_.FullName -Pattern 'Super-linter' -Quiet } |
+              Select-Object -First 1
 
-          find "$DIR" -type f -name 'step_summary_*scrubbed' | while read -r file; do
-            if grep -q "Super-linter" "$file"; then
-              echo "Copying Super-Linter job summary."
-              cp "$file" "$GITHUB_WORKSPACE/super-linter-summary.md"
-            fi
-          done
+          if ($summaryFile) {
+              Write-Output 'Copying Super-Linter job summary.'
+              Copy-Item -LiteralPath $summaryFile.FullName -Destination (Join-Path $env:GITHUB_WORKSPACE 'super-linter-summary.md')
+          }
         if: always()
 
       - name: 'Add Pull Request Comment'
         if: always() && github.event_name == 'pull_request'
         shell: pwsh
         run: |
-          $ghToken         = "${{ secrets.GITHUB_TOKEN }}"
+          $ghToken         = "${{ secrets.gh_token }}"
           $repositoryName  = ("${{ github.repository }}" -Split '/')[1]
           $repositoryOwner = ("${{ github.repository }}" -Split '/')[0]
           $issueNumber     = "${{ github.event.pull_request.number }}"
@@ -67,8 +69,8 @@ jobs:
           $bodyContent     = Get-Content "${{ github.workspace }}/super-linter-summary.md" -Raw
 
           $apiHeaders = @{
-            Authorization = "Bearer $ghToken"
-            Accept = "application/vnd.github.v3+json"
+              Authorization = "Bearer $ghToken"
+              Accept = "application/vnd.github.v3+json"
           }
 
           # Get existing comments and search for commentSearch value.
