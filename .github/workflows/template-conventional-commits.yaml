@@ -50,6 +50,7 @@ jobs:
               'style'
               'test'
           )
+
           $allowedTypesPattern = ($allowedTypes | ForEach-Object { [regex]::Escape($_) }) -join '|'
           $headerPattern = "^($allowedTypesPattern)(\([a-z0-9][a-z0-9._/-]*\))?!?: [a-z0-9](.*[^.])?$"
           $invalidHeaders = [System.Collections.Generic.List[string]]::new()
