@@ -2,6 +2,12 @@
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
   "editor.detectIndentation": false,
+  "[powershell]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false
+  },
+  "powershell.codeFormatting.preset": "Stroustrup",
   "editor.bracketPairColorization.enabled": true,
   "files.eol": "\n",
   "files.trimTrailingWhitespace": true,
